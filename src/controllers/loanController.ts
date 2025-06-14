@@ -2,7 +2,7 @@
 // src/controllers/loanController.ts
 import { Request, Response } from 'express';
 import Joi from 'joi';
-import Loan, { LoanStatus } from '../models/Loan';
+import Loan, { LoanStatus, LoanAttributes } from '../models/Loan';
 import User, { UserRole } from '../models/User';
 import Payment from '../models/Payment';
 import fs from 'fs';
@@ -14,9 +14,50 @@ interface AuthRequest extends Request {
 }
 
 const createLoanSchema = Joi.object({
-  amount: Joi.number().min(200).max(1000000).required(),
-  termWeeks: Joi.number().min(1).max(4).required(),
-  purpose: Joi.string().min(10).required(),
+  amount: Joi.number().min(200).max(1000000).required()
+    .messages({
+      'number.min': 'Loan amount must be at least ZMW 200',
+      'number.max': 'Loan amount cannot exceed ZMW 1,000,000',
+      'any.required': 'Loan amount is required'
+    }),
+    
+  termWeeks: Joi.number().min(1).max(4).required()
+    .messages({
+      'number.min': 'Loan term must be at least 1 week',
+      'number.max': 'Loan term cannot exceed 4 weeks',
+      'any.required': 'Loan term is required'
+    }),
+    
+  purpose: Joi.string().min(10).max(500).required()
+    .messages({
+      'string.min': 'Purpose must be at least 10 characters long',
+      'string.max': 'Purpose cannot exceed 500 characters',
+      'any.required': 'Loan purpose is required'
+    }),
+    
+  collateralImages: Joi.array()
+    .items(
+      Joi.string()
+        .pattern(/^data:image\/(jpeg|jpg|png|gif|webp);base64,/)
+        .message('Each image must be a valid base64 encoded image (JPEG, PNG, GIF, or WebP)')
+    )
+    .min(1)
+    .max(10)
+    .required()
+    .messages({
+      'array.min': 'At least 1 collateral image is required',
+      'array.max': 'Maximum of 10 collateral images allowed',
+      'any.required': 'Collateral images are required'
+    }),
+
+  // Optional fields that might be included
+  userId: Joi.string().optional(),
+  monthlyIncome: Joi.number().min(0).optional(),
+  employmentStatus: Joi.string().optional(),
+  employer: Joi.string().optional(),
+  collateralType: Joi.string().optional(),
+  collateralValue: Joi.number().min(0).optional(),
+  collateralDescription: Joi.string().max(1000).optional()
 });
 
 const approveLoanSchema = Joi.object({
@@ -32,71 +73,114 @@ export const createLoan = async (req: AuthRequest, res: Response) => {
       if (req.files) {
         const files = req.files as Express.Multer.File[];
         files.forEach(file => {
-          fs.unlink(file.path, (err) => {
-            if (err) console.error('Error deleting file:', err);
-          });
+          fs.unlinkSync(file.path);
         });
       }
-      return res.status(400).json({ error: error.details[0].message });
+      return res.status(400).json({ 
+        status: 0,
+        message: error.details[0].message,
+        data: null
+      });
+    }
+
+    // Check for existing active loans
+    const activeLoan = await Loan.findOne({
+      where: {
+        userId: req.user?.id,
+        status: {
+          [Op.in]: [LoanStatus.ACTIVE, LoanStatus.PENDING, LoanStatus.DEFAULTED, LoanStatus.APPROVED]
+        }
+      }
+    });
+
+    if (activeLoan) {
+      // Clean up uploaded files if loan exists
+      if (req.files) {
+        const files = req.files as Express.Multer.File[];
+        files.forEach(file => {
+          fs.unlinkSync(file.path);
+        });
+      }
+      return res.status(200).json({
+        status: 1,
+        message: "You cannot have multiple unsettled loans",
+        data: null
+      });
     }
 
     const { amount, termWeeks, purpose } = value;
 
+    // Calculate interest rate based on term
     let interestRate: number;
-
-    if (termWeeks === 1) {
-      interestRate = 0.15;
-    } else if (termWeeks === 2) {
-      interestRate = 0.25;
-    } else if (termWeeks === 3) {
-      interestRate = 0.35;
-    } else if (termWeeks === 4) {
-      interestRate = 0.45;
-    } else {
-      return res.status(400).json({ error: 'Invalid term. Only 1–4 weeks are allowed.' });
+    switch (termWeeks) {
+      case 1: interestRate = 0.15; break;
+      case 2: interestRate = 0.25; break;
+      case 3: interestRate = 0.35; break;
+      case 4: interestRate = 0.45; break;
+      default:
+        // Clean up uploaded files if term is invalid
+        if (req.files) {
+          const files = req.files as Express.Multer.File[];
+          files.forEach(file => {
+            fs.unlinkSync(file.path);
+          });
+        }
+        return res.status(400).json({ 
+          status: 0,
+          message: 'Invalid term. Only 1–4 weeks are allowed.',
+          data: null
+        });
     }
 
     // Process uploaded collateral images
-    let collateralImages: string[] = [];
-    if (req.files) {
+    const collateralImages: string[] = [];
+    if (req.files && Array.isArray(req.files)) {
       const files = req.files as Express.Multer.File[];
-      collateralImages = files.map(file => file.filename);
+      files.forEach(file => {
+        collateralImages.push(`/uploads/collateral/${file.filename}`);
+      });
     }
 
+    // Create the loan with proper typing
     const loan = await Loan.create({
-      userId: req.user!.id.toString(),
+      userId: req.user!.id,
       loan_number: generateLoanNumber(),
       amount,
       interestRate,
       termWeeks,
       purpose,
-      collateralImages: collateralImages, // Store image filenames
+      collateralImages,
+      status: LoanStatus.PENDING
+    } as unknown as LoanAttributes);
+
+    // Return success response
+    res.status(201).json({
+      status: 0,
+      message: 'Loan application submitted successfully',
+      data: {
+        ...loan.get({ plain: true }),
+        collateralImages: loan.collateralImages || []
+      }
     });
 
-    res.status(201).json({
-      message: 'Loan application submitted successfully',
-      loan: {
-        ...loan.toJSON(),
-        collateralImages: collateralImages.map(filename => ({
-          filename,
-          url: `/api/loans/collateral/${filename}`
-        }))
-      },
-    });
   } catch (error) {
     console.error('Create loan error:', error);
 
-    // Clean up uploaded files if database operation fails
+    // Clean up uploaded files if error occurs
     if (req.files) {
       const files = req.files as Express.Multer.File[];
       files.forEach(file => {
-        fs.unlink(file.path, (err) => {
-          if (err) console.error('Error deleting file:', err);
-        });
+        if (fs.existsSync(file.path)) {
+          fs.unlinkSync(file.path);
+        }
       });
     }
 
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      status: 0,
+      message: 'Internal server error',
+      data: null
+    });
   }
 };
 
@@ -155,7 +239,7 @@ export const getLoans = async (req: AuthRequest, res: Response) => {
         {
           model: User,
           as: 'user',
-          attributes: ['id', 'firstName', 'lastName', 'email'],
+          attributes: ['id', 'firstName', 'lastName', 'email', 'phone'],
         },
         {
           model: User,
@@ -352,11 +436,31 @@ export const AdminDashBoard = async (req: AuthRequest, res: Response) => {
     const totalDefaultedLoans = await Loan.count({ where: { status: LoanStatus.DEFAULTED } });
     const totalPendingLoans = await Loan.count({ where: { status: LoanStatus.PENDING } });
     const totalRejectedLoans = await Loan.count({ where: { status: LoanStatus.REJECTED } });
-    const totalApprovedLoans = await Loan.count({ where: { status: LoanStatus.APPROVED } });
+    const totalApprovedLoans = await Loan.count({
+  where: {
+    status: {
+      [Op.in]: [
+        LoanStatus.APPROVED,
+        LoanStatus.ACTIVE,
+        LoanStatus.DEFAULTED,
+        LoanStatus.COMPLETED
+      ]
+    }
+  }
+});
 
     // Monthly loan statistics
     const monthlyLoans = await getMonthlyData(Loan);
-    const monthlyApprovedLoans = await getMonthlyData(Loan, { status: LoanStatus.APPROVED || LoanStatus.COMPLETED|| LoanStatus.DEFAULTED || LoanStatus.ACTIVE });
+  const monthlyApprovedLoans = await getMonthlyData(Loan, {
+  status: {
+    [Op.in]: [
+      LoanStatus.APPROVED,
+      LoanStatus.COMPLETED,
+      LoanStatus.DEFAULTED,
+      LoanStatus.ACTIVE
+    ]
+  }
+});
     const monthlyDisbursedAmount = await getMonthlyData(
       Loan, 
       { status: { [Op.in]: [LoanStatus.ACTIVE, LoanStatus.COMPLETED, LoanStatus.DEFAULTED] } },
@@ -520,3 +624,4 @@ export const generateLoanNumber = (): string => {
 
   return `LN-${day}${month}${hour}${minute}-${randomSuffix}`;
 };
+

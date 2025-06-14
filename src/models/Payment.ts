@@ -2,6 +2,7 @@
 import { DataTypes, Model, Optional } from 'sequelize';
 import sequelize from '../config/database';
 import Loan from './Loan';
+import User from './User';
 
 export enum PaymentStatus {
   PENDING = 'pending',
@@ -12,6 +13,7 @@ export enum PaymentStatus {
 interface PaymentAttributes {
   id: string;
   loanId: string;
+  receivedBy:string;
   amount: number;
   paymentDate: Date;
   status: PaymentStatus;
@@ -27,6 +29,7 @@ interface PaymentCreationAttributes extends Optional<PaymentAttributes, 'id' | '
 class Payment extends Model<PaymentAttributes, PaymentCreationAttributes> implements PaymentAttributes {
   public id!: string;
   public loanId!: string;
+  public receivedBy!: string;
   public amount!: number;
   public paymentDate!: Date;
   public status!: PaymentStatus;
@@ -49,6 +52,14 @@ Payment.init(
       allowNull: false,
       references: {
         model: Loan,
+        key: 'id',
+      },
+    },
+    receivedBy:{
+      type: DataTypes.UUID,
+      allowNull:false,
+      references: {
+        model: User as unknown as "receiver",
         key: 'id',
       },
     },

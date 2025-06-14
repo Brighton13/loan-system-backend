@@ -19,6 +19,9 @@ export function setupAssociations() {
 
   Loan.hasMany(Payment, { foreignKey: 'loanId', as: 'payments' });
   Payment.belongsTo(Loan, { foreignKey: 'loanId', as: 'loan' });
+
+  Payment.belongsTo(User, {foreignKey: 'receivedBy', as: 'receiver'});
+  User.hasMany(Payment, {foreignKey: "receivedBy", as: "receiver"});
 }
 
 export default models;

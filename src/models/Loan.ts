@@ -12,7 +12,7 @@ export enum LoanStatus {
     DEFAULTED = 'defaulted'
 }
 
-interface LoanAttributes {
+export interface LoanAttributes {
     id: string;
     loan_number: string;
     approval_reason?: string; // Added this field
