@@ -52,6 +52,12 @@ app.use('/api/admin', admin_1.default);
 app.get('/health', (req, res) => {
     res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+// // Serve static files from dist
+// app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+// // Fallback to index.html
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+// });
 // Error handling middleware with source information
 app.use((err, req, res, next) => {
     // Log Sequelize errors with source info

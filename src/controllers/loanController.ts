@@ -20,21 +20,21 @@ const createLoanSchema = Joi.object({
       'number.max': 'Loan amount cannot exceed ZMW 1,000,000',
       'any.required': 'Loan amount is required'
     }),
-    
+
   termWeeks: Joi.number().min(1).max(4).required()
     .messages({
       'number.min': 'Loan term must be at least 1 week',
       'number.max': 'Loan term cannot exceed 4 weeks',
       'any.required': 'Loan term is required'
     }),
-    
-  purpose: Joi.string().min(10).max(500).required()
+
+  purpose: Joi.string().min(3).max(500).required()
     .messages({
       'string.min': 'Purpose must be at least 10 characters long',
       'string.max': 'Purpose cannot exceed 500 characters',
       'any.required': 'Loan purpose is required'
     }),
-    
+
   collateralImages: Joi.array()
     .items(
       Joi.string()
@@ -76,7 +76,7 @@ export const createLoan = async (req: AuthRequest, res: Response) => {
           fs.unlinkSync(file.path);
         });
       }
-      return res.status(400).json({ 
+      return res.status(400).json({
         status: 0,
         message: error.details[0].message,
         data: null
@@ -125,7 +125,7 @@ export const createLoan = async (req: AuthRequest, res: Response) => {
             fs.unlinkSync(file.path);
           });
         }
-        return res.status(400).json({ 
+        return res.status(400).json({
           status: 0,
           message: 'Invalid term. Only 1–4 weeks are allowed.',
           data: null
@@ -176,7 +176,7 @@ export const createLoan = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    res.status(500).json({ 
+    res.status(500).json({
       status: 0,
       message: 'Internal server error',
       data: null
@@ -247,6 +247,11 @@ export const getLoans = async (req: AuthRequest, res: Response) => {
           attributes: ['id', 'firstName', 'lastName'],
           required: false,
         },
+        {
+          model: Payment,
+          as: "payments",
+          required: false,
+        }
       ],
       limit: Number(limit),
       offset,
@@ -266,16 +271,16 @@ export const getLoans = async (req: AuthRequest, res: Response) => {
       status: 0,
       message: 'Loans retrieved successfully',
       data: {
-        loans: loansWithImageUrls, 
+        loans: loansWithImageUrls,
         pagination: {
-        page: Number(page),
-        limit: Number(limit),
-        total: loans.count,
-        pages: Math.ceil(loans.count / Number(limit)),
-      },
+          page: Number(page),
+          limit: Number(limit),
+          total: loans.count,
+          pages: Math.ceil(loans.count / Number(limit)),
+        },
       }
-      
-     
+
+
     });
   } catch (error) {
     console.error('Get loans error:', error);
@@ -405,11 +410,11 @@ export const AdminDashBoard = async (req: AuthRequest, res: Response) => {
     // Function to get monthly data
     const getMonthlyData = async (model: any, whereClause: any = {}, sumField: string | null = null) => {
       const monthlyData = [];
-      
+
       for (let month = 0; month < 12; month++) {
         const startDate = new Date(currentYear, month, 1);
         const endDate = new Date(currentYear, month + 1, 0);
-        
+
         const monthWhere = {
           ...whereClause,
           createdAt: {
@@ -425,7 +430,7 @@ export const AdminDashBoard = async (req: AuthRequest, res: Response) => {
           monthlyData.push(count);
         }
       }
-      
+
       return monthlyData;
     };
 
@@ -437,32 +442,32 @@ export const AdminDashBoard = async (req: AuthRequest, res: Response) => {
     const totalPendingLoans = await Loan.count({ where: { status: LoanStatus.PENDING } });
     const totalRejectedLoans = await Loan.count({ where: { status: LoanStatus.REJECTED } });
     const totalApprovedLoans = await Loan.count({
-  where: {
-    status: {
-      [Op.in]: [
-        LoanStatus.APPROVED,
-        LoanStatus.ACTIVE,
-        LoanStatus.DEFAULTED,
-        LoanStatus.COMPLETED
-      ]
-    }
-  }
-});
+      where: {
+        status: {
+          [Op.in]: [
+            LoanStatus.APPROVED,
+            LoanStatus.ACTIVE,
+            LoanStatus.DEFAULTED,
+            LoanStatus.COMPLETED
+          ]
+        }
+      }
+    });
 
     // Monthly loan statistics
     const monthlyLoans = await getMonthlyData(Loan);
-  const monthlyApprovedLoans = await getMonthlyData(Loan, {
-  status: {
-    [Op.in]: [
-      LoanStatus.APPROVED,
-      LoanStatus.COMPLETED,
-      LoanStatus.DEFAULTED,
-      LoanStatus.ACTIVE
-    ]
-  }
-});
+    const monthlyApprovedLoans = await getMonthlyData(Loan, {
+      status: {
+        [Op.in]: [
+          LoanStatus.APPROVED,
+          LoanStatus.COMPLETED,
+          LoanStatus.DEFAULTED,
+          LoanStatus.ACTIVE
+        ]
+      }
+    });
     const monthlyDisbursedAmount = await getMonthlyData(
-      Loan, 
+      Loan,
       { status: { [Op.in]: [LoanStatus.ACTIVE, LoanStatus.COMPLETED, LoanStatus.DEFAULTED] } },
       'amount'
     );
@@ -470,14 +475,20 @@ export const AdminDashBoard = async (req: AuthRequest, res: Response) => {
     // User statistics
     const totalUsers = await User.count({ where: { role: UserRole.USER } });
     const totalAdmins = await User.count({ where: { role: UserRole.ADMIN } });
-    
+
     // Monthly user onboarding
     const monthlyNewUsers = await getMonthlyData(User, { role: UserRole.USER });
 
     // Financial statistics
-    const totalAmountLoaned = await Loan.sum('amount') || 0;
+    const totalAmountLoaned = await Loan.sum('amount',{
+      where:{
+        status:{
+           [Op.in]: [LoanStatus.ACTIVE, LoanStatus.COMPLETED, LoanStatus.DEFAULTED]
+        }
+      }
+    }) || 0;
     const totalAmountRepaid = await Payment.sum('amount') || 0;
-    
+
     // Calculate total amount disbursed (only for active and completed loans)
     const totalAmountDisbursed = await Loan.sum('amount', {
       where: {
@@ -505,7 +516,7 @@ export const AdminDashBoard = async (req: AuthRequest, res: Response) => {
     // Recent loans (last 7 days)
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    
+
     const recentLoans = await Loan.count({
       where: {
         createdAt: {
@@ -516,12 +527,12 @@ export const AdminDashBoard = async (req: AuthRequest, res: Response) => {
 
     // Calculate loan approval rate
     const totalProcessedLoans = totalApprovedLoans + totalRejectedLoans;
-    const loanApprovalRate = totalProcessedLoans > 0 
+    const loanApprovalRate = totalProcessedLoans > 0
       ? ((totalApprovedLoans / totalProcessedLoans) * 100).toFixed(2)
       : 0;
 
     // Calculate average loan amount
-    const averageLoanAmount = totalLoans > 0 
+    const averageLoanAmount = totalLoans > 0
       ? (Number(totalAmountLoaned) / totalLoans).toFixed(2)
       : 0;
 
@@ -603,7 +614,7 @@ export const AdminDashBoard = async (req: AuthRequest, res: Response) => {
 
   } catch (error) {
     console.error('Admin dashboard error:', error);
-    return res.status(500).json({ 
+    return res.status(500).json({
       success: false,
       error: 'Internal server error',
       message: 'Failed to retrieve dashboard data'

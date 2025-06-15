@@ -57,7 +57,7 @@ const createLoanSchema = joi_1.default.object({
         'number.max': 'Loan term cannot exceed 4 weeks',
         'any.required': 'Loan term is required'
     }),
-    purpose: joi_1.default.string().min(10).max(500).required()
+    purpose: joi_1.default.string().min(3).max(500).required()
         .messages({
         'string.min': 'Purpose must be at least 10 characters long',
         'string.max': 'Purpose cannot exceed 500 characters',
@@ -262,6 +262,11 @@ const getLoans = async (req, res) => {
                     attributes: ['id', 'firstName', 'lastName'],
                     required: false,
                 },
+                {
+                    model: Payment_1.default,
+                    as: "payments",
+                    required: false,
+                }
             ],
             limit: Number(limit),
             offset,
@@ -464,7 +469,13 @@ const AdminDashBoard = async (req, res) => {
         // Monthly user onboarding
         const monthlyNewUsers = await getMonthlyData(User_1.default, { role: User_1.UserRole.USER });
         // Financial statistics
-        const totalAmountLoaned = await Loan_1.default.sum('amount') || 0;
+        const totalAmountLoaned = await Loan_1.default.sum('amount', {
+            where: {
+                status: {
+                    [sequelize_1.Op.in]: [Loan_1.LoanStatus.ACTIVE, Loan_1.LoanStatus.COMPLETED, Loan_1.LoanStatus.DEFAULTED]
+                }
+            }
+        }) || 0;
         const totalAmountRepaid = await Payment_1.default.sum('amount') || 0;
         // Calculate total amount disbursed (only for active and completed loans)
         const totalAmountDisbursed = await Loan_1.default.sum('amount', {

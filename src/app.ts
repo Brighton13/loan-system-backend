@@ -10,6 +10,7 @@ import loanRoutes from './routes/loans';
 import AdminDashBoard from './routes/admin';
 import './models/index';
 import { setupAssociations } from './models/index';
+import path from 'path';
 
 dotenv.config();
 
@@ -57,6 +58,15 @@ app.use('/api/admin', AdminDashBoard);
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
+// // Serve static files from dist
+// app.use(express.static(path.join(__dirname, '../../frontend/dist')));
+
+// // Fallback to index.html
+// app.get('*', (req, res) => {
+//   res.sendFile(path.join(__dirname, '../../frontend/dist/index.html'));
+// });
+
 
 // Error handling middleware with source information
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
