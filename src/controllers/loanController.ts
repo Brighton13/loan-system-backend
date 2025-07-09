@@ -9,7 +9,7 @@ import fs from 'fs';
 import path from 'path';
 import { Op } from 'sequelize';
 
-interface AuthRequest extends Request {
+export interface AuthRequest extends Request {
   user?: User;
 }
 
@@ -76,11 +76,12 @@ export const createLoan = async (req: AuthRequest, res: Response) => {
           fs.unlinkSync(file.path);
         });
       }
-      return res.status(400).json({
+       res.status(400).json({
         status: 0,
         message: error.details[0].message,
         data: null
       });
+      return;
     }
 
     // Check for existing active loans
