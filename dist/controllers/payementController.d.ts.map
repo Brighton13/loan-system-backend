@@ -1,1 +1,0 @@
-{"version":3,"file":"payementController.d.ts","sourceRoot":"","sources":["../../src/controllers/payementController.ts"],"names":[],"mappings":"AAAA,OAAO,EAAE,OAAO,EAAE,QAAQ,EAAE,MAAM,SAAS,CAAC;AAC5C,OAAO,IAAI,MAAM,gBAAgB,CAAC;AAOlC,UAAU,WAAY,SAAQ,OAAO;IACjC,IAAI,CAAC,EAAE,IAAI,CAAC;CACf;AAED,eAAO,MAAM,YAAY,GAAU,KAAK,WAAW,EAAE,KAAK,QAAQ,gDAsHjE,CAAC"}
