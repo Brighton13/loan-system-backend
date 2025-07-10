@@ -78,6 +78,7 @@ export const register = async (req: Request, res: Response) => {
                 role: user.role,
             },
         });
+        return;
     } catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({ error: 'Internal server error' });
