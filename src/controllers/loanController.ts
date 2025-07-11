@@ -8,6 +8,7 @@ import Payment from '../models/Payment';
 import fs from 'fs';
 import path from 'path';
 import { Op } from 'sequelize';
+import { generateApprovalEmail, generateRejectionEmail, sendLoanApplicationEmail } from '../services/email';
 
 export interface AuthRequest extends Request {
   user?: User;
@@ -64,6 +65,129 @@ const approveLoanSchema = Joi.object({
   status: Joi.string().valid(LoanStatus.APPROVED, LoanStatus.REJECTED).required(),
   reason: Joi.string().optional(),
 });
+
+// export const createLoan = async (req: AuthRequest, res: Response) => {
+//   try {
+//     const { error, value } = createLoanSchema.validate(req.body);
+//     if (error) {
+//       // Clean up uploaded files if validation fails
+//       if (req.files) {
+//         const files = req.files as Express.Multer.File[];
+//         files.forEach(file => {
+//           fs.unlinkSync(file.path);
+//         });
+//       }
+//        res.status(400).json({
+//         status: 0,
+//         message: error.details[0].message,
+//         data: null
+//       });
+//       return;
+//     }
+
+//     // Check for existing active loans
+//     const activeLoan = await Loan.findOne({
+//       where: {
+//         userId: req.user?.id,
+//         status: {
+//           [Op.in]: [LoanStatus.ACTIVE, LoanStatus.PENDING, LoanStatus.DEFAULTED, LoanStatus.APPROVED]
+//         }
+//       }
+//     });
+
+//     if (activeLoan) {
+//       // Clean up uploaded files if loan exists
+//       if (req.files) {
+//         const files = req.files as Express.Multer.File[];
+//         files.forEach(file => {
+//           fs.unlinkSync(file.path);
+//         });
+//       }
+//       return res.status(200).json({
+//         status: 1,
+//         message: "You cannot have multiple unsettled loans",
+//         data: null
+//       });
+//     }
+
+//     const { amount, termWeeks, purpose } = value;
+
+//     // Calculate interest rate based on term
+//     let interestRate: number;
+//     switch (termWeeks) {
+//       case 1: interestRate = 0.15; break;
+//       case 2: interestRate = 0.25; break;
+//       case 3: interestRate = 0.35; break;
+//       case 4: interestRate = 0.45; break;
+//       default:
+//         // Clean up uploaded files if term is invalid
+//         if (req.files) {
+//           const files = req.files as Express.Multer.File[];
+//           files.forEach(file => {
+//             fs.unlinkSync(file.path);
+//           });
+//         }
+//         return res.status(400).json({
+//           status: 0,
+//           message: 'Invalid term. Only 1–4 weeks are allowed.',
+//           data: null
+//         });
+//     }
+
+//     // Process uploaded collateral images
+//     const collateralImages: string[] = [];
+//     if (req.files && Array.isArray(req.files)) {
+//       const files = req.files as Express.Multer.File[];
+//       files.forEach(file => {
+//         collateralImages.push(`/uploads/collateral/${file.filename}`);
+//       });
+//     }
+
+//     // Create the loan with proper typing
+//     const loan = await Loan.create({
+//       userId: req.user!.id,
+//       loan_number: generateLoanNumber(),
+//       amount,
+//       interestRate,
+//       termWeeks,
+//       purpose,
+//       collateralImages,
+//       status: LoanStatus.PENDING
+//     } as unknown as LoanAttributes);
+
+//     // Return success response
+//     res.status(201).json({
+//       status: 0,
+//       message: 'Loan application submitted successfully',
+//       data: {
+//         ...loan.get({ plain: true }),
+//         collateralImages: loan.collateralImages || []
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('Create loan error:', error);
+
+//     // Clean up uploaded files if error occurs
+//     if (req.files) {
+//       const files = req.files as Express.Multer.File[];
+//       files.forEach(file => {
+//         if (fs.existsSync(file.path)) {
+//           fs.unlinkSync(file.path);
+//         }
+//       });
+//     }
+
+//     res.status(500).json({
+//       status: 0,
+//       message: 'Internal server error',
+//       data: null
+//     });
+//   }
+// };
+
+// New endpoint to serve collateral images
+
 
 export const createLoan = async (req: AuthRequest, res: Response) => {
   try {
@@ -154,6 +278,16 @@ export const createLoan = async (req: AuthRequest, res: Response) => {
       status: LoanStatus.PENDING
     } as unknown as LoanAttributes);
 
+    // Send email notification after successful loan creation
+    try {
+      
+      await sendLoanApplicationEmail(loan.get({ plain: true }), req.user);
+    } catch (emailError) {
+      // Log email error but don't fail the loan creation
+      console.error('Email notification failed:', emailError);
+      // Optionally, you could store this failure in a queue for retry later
+    }
+
     // Return success response
     res.status(201).json({
       status: 0,
@@ -185,7 +319,6 @@ export const createLoan = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// New endpoint to serve collateral images
 export const getCollateralImage = async (req: Request, res: Response) => {
   try {
     const { filename } = req.params;
@@ -343,6 +476,68 @@ export const getLoanById = async (req: AuthRequest, res: Response) => {
 };
 
 // Keep existing functions unchanged
+// export const approveLoan = async (req: AuthRequest, res: Response) => {
+//   try {
+//     const { id } = req.params;
+//     const { error, value } = approveLoanSchema.validate(req.body);
+
+//     if (error) {
+//       return res.status(400).json({ error: error.details[0].message });
+//     }
+
+//     const { status } = value;
+
+//     const loan = await Loan.findByPk(id);
+//     if (!loan) {
+//       return res.status(404).json({ error: 'Loan not found' });
+//     }
+
+//     if (loan.status !== LoanStatus.PENDING) {
+//       return res.status(400).json({ error: 'Loan has already been processed' });
+//     }
+
+//     if (status === LoanStatus.APPROVED) {
+//       const amount = Number(loan.amount);
+//       const interestRate = Number(loan.interestRate);
+//       const interestAmount = amount * interestRate;
+//       const totalAmount = amount + interestAmount;
+//       const startDate = new Date();
+//       const endDate = new Date();
+//       endDate.setDate(startDate.getDate() + loan.termWeeks * 7);
+
+//       const loan_data =await loan.update({
+//         status: LoanStatus.ACTIVE,
+//         approvedBy: req.user!.id,
+//         approvedAt: new Date(),
+//         approval_reason: value.reason || null,
+//         startDate,
+//         endDate,
+//         totalAmount: Math.round(totalAmount * 100) / 100,
+//         remainingAmount: Math.round(totalAmount * 100) / 100,
+//       });
+
+//     await  generateApprovalEmail(loan_data);
+//     } else {
+//       const loan_data=await loan.update({
+//         status,
+//         approvedBy: req.user!.id,
+//         approval_reason: value.reason || null,
+//         approvedAt: new Date(),
+//       });
+//     await  generateRejectionEmail(loan_data)
+//     }
+
+//     res.json({
+//       message: `Loan ${status} successfully`,
+//       loan,
+//     });
+//   } catch (error) {
+//     console.error('Approve loan error:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
+
+
 export const approveLoan = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params;
@@ -363,13 +558,23 @@ export const approveLoan = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Loan has already been processed' });
     }
 
+    // Get borrower information
+    const borrower = await User.findByPk(loan.userId); // Assuming userId field exists on loan
+    if (!borrower) {
+      return res.status(404).json({ error: 'Borrower not found' });
+    }
+
+    let totalAmount = 0;
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
+
     if (status === LoanStatus.APPROVED) {
       const amount = Number(loan.amount);
       const interestRate = Number(loan.interestRate);
       const interestAmount = amount * interestRate;
-      const totalAmount = amount + interestAmount;
-      const startDate = new Date();
-      const endDate = new Date();
+      totalAmount = amount + interestAmount;
+      startDate = new Date();
+      endDate = new Date();
       endDate.setDate(startDate.getDate() + loan.termWeeks * 7);
 
       await loan.update({
@@ -382,6 +587,29 @@ export const approveLoan = async (req: AuthRequest, res: Response) => {
         totalAmount: Math.round(totalAmount * 100) / 100,
         remainingAmount: Math.round(totalAmount * 100) / 100,
       });
+
+      // Send approval email
+      try {
+        const emailData = {
+          borrowerName: `${borrower.firstName} ${borrower.lastName}`.trim(),
+          borrowerEmail: borrower.email,
+          loanId: loan.loan_number.toString(),
+          amount: Number(loan.amount),
+          interestRate: Number(loan.interestRate),
+          termWeeks: loan.termWeeks,
+          totalAmount: Math.round(totalAmount * 100) / 100,
+          startDate,
+          endDate,
+          companyName: 'Quickcash Ltd',
+          contactEmail: 'bbtechnologies01@gmail.com',
+          contactPhone: '0973849272',
+        };
+        
+        await generateApprovalEmail(emailData);
+        console.log(`Approval email sent successfully to ${borrower.email} for loan ${loan.id}`);
+      } catch (emailError) {
+        console.error('Failed to send approval email:', emailError);
+      }
     } else {
       await loan.update({
         status,
@@ -389,6 +617,25 @@ export const approveLoan = async (req: AuthRequest, res: Response) => {
         approval_reason: value.reason || null,
         approvedAt: new Date(),
       });
+
+      // Send rejection email
+      try {
+        const emailData = {
+          borrowerName: `${borrower.firstName} ${borrower.lastName}`.trim(),
+          borrowerEmail: borrower.email,
+          loanId: loan.loan_number.toString(),
+          amount: Number(loan.amount),
+          reason: value.reason || 'Unfortunately, we cannot approve your loan application at this time.',
+          companyName: 'Quickcash Ltd',
+          contactEmail: 'bbtechnologies01@gmail.com',
+          contactPhone: '0973849272',
+        };
+        
+        await generateRejectionEmail(emailData);
+        console.log(`Rejection email sent successfully to ${borrower.email} for loan ${loan.id}`);
+      } catch (emailError) {
+        console.error('Failed to send rejection email:', emailError);
+      }
     }
 
     res.json({
