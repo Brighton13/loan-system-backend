@@ -131,7 +131,7 @@ export async function sendForgotPasswordEmail(
     <div style="max-width: 600px; margin: 0 auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; color: #333;">
       <!-- Header -->
       <div style="text-align: center; padding: 20px 0; border-bottom: 1px solid #eaeaea;">
-        ${imagePath ? '<img src="cid:unique-image-id" alt="ZICTA Logo" style="height: 60px;">' : '<h1 style="color: #2c3e50; margin: 0;">ZICTA Portal</h1>'}
+        ${imagePath ? '<img src="cid:unique-image-id" alt="Quickcash Logo" style="height: 60px;">' : '<h1 style="color: #2c3e50; margin: 0;">Quickcash Portal</h1>'}
       </div>
 
       <!-- Main Content -->
@@ -140,7 +140,7 @@ export async function sendForgotPasswordEmail(
         
         <p>Dear User,</p>
         
-        <p>We received a request to reset your password for the <strong>ZICTA Portal</strong>.</p>
+        <p>We received a request to reset your password for the <strong>Quickcash Portal</strong>.</p>
         
         <div style="background-color: #f8f9fa; border: 1px solid #e1e1e1; border-radius: 5px; padding: 15px; margin: 20px 0; text-align: center;">
           <h3 style="margin-top: 0; color: #2c3e50; font-size: 16px;">Your Password Reset Token</h3>
@@ -180,25 +180,25 @@ export async function sendForgotPasswordEmail(
         <div style="background-color: #f0f0f0; padding: 15px; border-radius: 5px; margin: 20px 0;">
           <p style="margin: 0; font-size: 14px;">
             <strong>Need Help?</strong> Contact our support team at 
-            <a href="mailto:support@zicta.zm" style="color: #3498db;">support@zicta.zm</a>
-            or call +260 211 378200
+            <a href="mailto:bbtechnologies01@gmail.com" style="color: #3498db;">bbtechnologies01@gmail.com</a>
+            or call +260973849272
           </p>
         </div>
         
         <p style="margin-top: 30px;">Sincerely,</p>
-        <p><strong>ZICTA Security Team</strong></p>
+        <p><strong>QuickCash Security Team</strong></p>
       </div>
 
       <!-- Footer -->
       <div style="background-color: #f5f5f5; padding: 20px; text-align: center; font-size: 14px; color: #666; border-top: 1px solid #eaeaea;">
         <div style="margin-bottom: 15px;">
-          <a href="https://www.zicta.zm" style="color: #337ab7; text-decoration: none; margin: 0 10px;">🌐 Website</a>
-          <a href="mailto:support@zicta.zm" style="color: #337ab7; text-decoration: none; margin: 0 10px;">💬 Technical Support</a>
-          <a href="mailto:security@zicta.zm" style="color: #337ab7; text-decoration: none; margin: 0 10px;">🔒 Security Team</a>
+          <a href="https://quickcash.work" style="color: #337ab7; text-decoration: none; margin: 0 10px;">🌐 Website</a>
+          <a href="mailto:bbtechnologies01@gmail.com" style="color: #337ab7; text-decoration: none; margin: 0 10px;">💬 Technical Support</a>
+          <a href="mailto:bbtechnologies01@gmail.com" style="color: #337ab7; text-decoration: none; margin: 0 10px;">🔒 Security Team</a>
         </div>
-        <p style="margin: 5px 0;">📍 Plot 4909, Corner of Independence Avenue & United Nations Road</p>
-        <p style="margin: 5px 0;">📮 P.O. Box 36871, Lusaka, Zambia</p>
-        <p style="margin: 5px 0;">📞 Tel: +260 211 378200 / 244424-27</p>
+        <p style="margin: 5px 0;">📍 Jack Compound Esther Lungu Road</p>
+        <p style="margin: 5px 0;">📮 P.O. Box 5323 M/B/E, Lusaka, Zambia</p>
+        <p style="margin: 5px 0;">📞 phone: +260973849272</p>
         <p style="margin: 10px 0 0; font-size: 12px;">© ${new Date().getFullYear()} Quickcash. All rights reserved.</p>
       </div>
     </div>
@@ -207,7 +207,7 @@ export async function sendForgotPasswordEmail(
   // Create attachments array only if imagePath is provided
   const attachments: EmailAttachment[] | undefined = imagePath ? [
     {
-      filename: 'zicta-logo.webp',
+      filename: 'quickcash-logo.webp',
       path: imagePath,
       cid: 'unique-image-id',
       contentType: 'image/webp'
