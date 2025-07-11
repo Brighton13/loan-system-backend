@@ -160,7 +160,7 @@ export async function sendForgotPasswordEmail(
         </div>
 
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${process.env.FRONTEND_URL}/reset-password" 
+          <a href="${process.env.FRONTEND_URL}/reset-password?token=${token}" 
              style="background-color: #007bff; color: white; padding: 12px 30px; 
                     text-decoration: none; border-radius: 5px; display: inline-block;
                     font-weight: bold; font-size: 16px;">
@@ -168,7 +168,7 @@ export async function sendForgotPasswordEmail(
           </a>
         </div>
 
-        <p>To reset your password, click the button above or visit our <a href="${process.env.FRONTEND_URL}/reset-password" style="color: #3498db;">password reset page</a> and enter this token.</p>
+        <p>To reset your password, click the button above or visit our <a href="${process.env.FRONTEND_URL}/reset-password?token=${token}" style="color: #3498db;">password reset page</a> and enter this token.</p>
         
         <h3 style="margin-bottom: 10px; color: #2c3e50; font-size: 16px;">🔐 Password Best Practices</h3>
         <ol style="margin-top: 0; padding-left: 20px;">
