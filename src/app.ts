@@ -8,6 +8,7 @@ import sequelize from './config/database';
 import authRoutes from './routes/auth';
 import loanRoutes from './routes/loans';
 import AdminDashBoard from './routes/admin';
+import userRoutes from './routes/user';
 import './models/index';
 import { setupAssociations } from './models/index';
 import path from 'path';
@@ -53,6 +54,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/loans', loanRoutes);
 app.use('/api/admin', AdminDashBoard);
+app.use('/api/users', userRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
