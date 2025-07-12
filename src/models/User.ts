@@ -18,6 +18,9 @@ interface UserAttributes {
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
+  nationalId: string; // Unique identifier for the user
+  address?: string; // Optional field for user's address
+  dateOfBirth: Date; // Date of birth of the user
 }
 
 interface UserCreationAttributes extends Optional<UserAttributes, 'id' | 'isActive'> {}
@@ -31,6 +34,9 @@ class User extends Model<UserAttributes, UserCreationAttributes> implements User
   public password!: string;
   public role!: UserRole;
   public isActive!: boolean;
+  public nationalId!: string; // Unique identifier for the user
+  public address?: string; // Optional field for user's address
+  public dateOfBirth!: Date; // Date of birth of the user
   public readonly createdAt!: Date;
   public readonly updatedAt!: Date;
 
@@ -77,6 +83,19 @@ User.init(
     isActive: {
       type: DataTypes.BOOLEAN,
       defaultValue: true,
+    },
+    nationalId: {
+      type: DataTypes.STRING(20), 
+      allowNull: false,
+      unique: true,
+    },
+    address: {
+      type: DataTypes.STRING(255), 
+      allowNull: true,
+    },
+    dateOfBirth: {
+      type: DataTypes.DATE,
+      allowNull: false,
     },
   },
   {

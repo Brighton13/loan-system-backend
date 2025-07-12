@@ -311,7 +311,7 @@ export const adminDeleteUser = async (req: AuthRequest, res: Response) => {
 
 export const adminAddUser = async (req: AuthRequest, res: Response) => {
     try {
-        const { firstName, lastName, email, phone, password, role } = req.body;
+        const { firstName, lastName, email, phone, nationalId, dateOfBirth, password, role, address } = req.body;
 
         // Verify the requester is an admin
         const adminUser = req.user;
@@ -325,9 +325,12 @@ export const adminAddUser = async (req: AuthRequest, res: Response) => {
             lastName,
             email,
             phone,
-            password:"User1234",
+            password: "User1234",
             role: role || 'user', // Default to 'user' if no role provided
-            isActive: true // Default to active
+            isActive: true, // Default to active
+            nationalId: nationalId,
+            dateOfBirth: dateOfBirth,
+            address: address || "",
         });
 
         res.status(201).json({

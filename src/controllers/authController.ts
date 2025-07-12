@@ -169,8 +169,11 @@ const registerSchema = Joi.object({
     firstName: Joi.string().min(2).max(50).required(),
     lastName: Joi.string().min(2).max(50).required(),
     email: Joi.string().email().required(),
-    phone: Joi.string().optional().max(10), // Optional field for phone number
+    phone: Joi.string().required().min(10).max(10),
     password: Joi.string().min(6).required(),
+    nationalId: Joi.string().required(),
+    address: Joi.string().optional(),
+    dateOfBirth: Joi.date().required(),
     role: Joi.string().valid(...Object.values(UserRole)).optional(),
 });
 
@@ -268,7 +271,7 @@ export const register = async (req: Request, res: Response) => {
             return res.status(400).json({ error: error.details[0].message });
         }
 
-        const { firstName, lastName, email, phone, password, role } = value;
+        const { firstName, lastName, email, phone, password, role, address, nationalId, dateOfBirth } = value;
 
         const existingUser = await User.findOne({ where: { email } });
         if (existingUser) {
@@ -282,6 +285,9 @@ export const register = async (req: Request, res: Response) => {
             phone,
             password,
             role: role || UserRole.USER,
+            nationalId,
+            dateOfBirth,
+            address,
         });
 
         const token = generateToken({
