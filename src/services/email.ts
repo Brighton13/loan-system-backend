@@ -347,7 +347,7 @@ export async function sendLoanApplicationEmail(
         + `Applicant: ${userInfo?.name || userInfo?.firstName + ' ' + userInfo?.lastName || 'N/A'}\n`
         + `Email: ${userInfo?.email || 'N/A'}\n`
         + `Phone: ${userInfo?.phone || 'N/A'}\n`
-        + `Amount Requested: $${loanData.amount?.toLocaleString() || 'N/A'}\n`
+        + `Amount Requested: ZMW ${loanData.amount?.toLocaleString() || 'N/A'}\n`
         + `Loan Term: ${loanData.termWeeks} week(s)\n`
         + `Interest Rate: ${((loanData.interestRate || 0) * 100).toFixed(1)}%\n`
         + `Purpose: ${loanData.purpose || 'N/A'}\n`
