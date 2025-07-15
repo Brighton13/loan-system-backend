@@ -12,6 +12,8 @@ import userRoutes from './routes/user';
 import './models/index';
 import { setupAssociations } from './models/index';
 import path from 'path';
+import { startLoanReminderJob } from './services/triggers';
+import { sendDueDateReminders } from './services/automated_job/due_loan_reminders';
 
 dotenv.config();
 
@@ -59,6 +61,10 @@ app.use('/api/users', userRoutes);
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
+});
+app.get('/test-reminders', async (req, res) => {
+  await sendDueDateReminders();
+  res.send('Reminder test completed');
 });
 
 // // Serve static files from dist
@@ -110,7 +116,7 @@ const startServer = async () => {
     await sequelize.sync({ force: false });
     setupAssociations();
     console.log('Database synchronized.');
-    
+    startLoanReminderJob();
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
       console.log(`Environment: ${process.env.NODE_ENV}`);

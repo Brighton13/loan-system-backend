@@ -23,6 +23,7 @@ export interface LoanAttributes {
     collateralImages?: string[]; // Added this field
     purpose: string;
     status: LoanStatus;
+    reminderSent?: boolean; // Assuming you have this field for reminders
     approvedBy?: number;
     approvedAt?: Date;
     startDate?: Date;
@@ -52,12 +53,15 @@ class Loan extends Model<LoanAttributes, LoanCreationAttributes> implements Loan
     public approvedAt?: Date;
     public startDate?: Date;
     public endDate?: Date;
+    public reminderSent?: boolean; // Assuming you have this field for reminders
     public totalAmount?: number;
     public paidAmount!: number;
     public remainingAmount?: number;
     public collateral_details?: string; 
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
+    borrower: any;
+    user: any;
 }
 
 Loan.init(
@@ -164,6 +168,11 @@ Loan.init(
         collateral_details:{
             type: DataTypes.TEXT,
             allowNull: true,
+        },
+        reminderSent:{
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
         }
     },
     {
