@@ -23,6 +23,7 @@ export interface LoanAttributes {
     collateralImages?: string[]; // Added this field
     purpose: string;
     status: LoanStatus;
+    reminderSent?: boolean; // Assuming you have this field for reminders
     approvedBy?: number;
     approvedAt?: Date;
     startDate?: Date;
@@ -30,6 +31,7 @@ export interface LoanAttributes {
     totalAmount?: number;
     paidAmount: number;
     remainingAmount?: number;
+    collateral_details?: string; // Added this field
     createdAt?: Date;
     updatedAt?: Date;
 }
@@ -39,23 +41,27 @@ interface LoanCreationAttributes extends Optional<LoanAttributes, 'id' | 'status
 class Loan extends Model<LoanAttributes, LoanCreationAttributes> implements LoanAttributes {
     public id!: string;
     public loan_number!: string;
-    public approval_reason?: string; // Added this field
+    public approval_reason?: string;
     public userId!: string;
     public amount!: number;
     public interestRate!: number;
     public termWeeks!: number;
-    public collateralImages?: string[]; // Added this field
+    public collateralImages?: string[]; 
     public purpose!: string;
     public status!: LoanStatus;
     public approvedBy?: number;
     public approvedAt?: Date;
     public startDate?: Date;
     public endDate?: Date;
+    public reminderSent?: boolean; // Assuming you have this field for reminders
     public totalAmount?: number;
     public paidAmount!: number;
     public remainingAmount?: number;
+    public collateral_details?: string; 
     public readonly createdAt!: Date;
     public readonly updatedAt!: Date;
+    borrower: any;
+    user: any;
 }
 
 Loan.init(
@@ -159,6 +165,15 @@ Loan.init(
             type: DataTypes.DECIMAL(15, 2),
             allowNull: true,
         },
+        collateral_details:{
+            type: DataTypes.TEXT,
+            allowNull: true,
+        },
+        reminderSent:{
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false,
+        }
     },
     {
         sequelize,

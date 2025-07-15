@@ -53,6 +53,8 @@
 // export default new EmailService();
 
 import nodemailer from 'nodemailer';
+import Loan from '../models/Loan';
+import User from '../models/User';
 
 interface EmailAttachment {
     filename?: string;
@@ -347,7 +349,7 @@ export async function sendLoanApplicationEmail(
         + `Applicant: ${userInfo?.name || userInfo?.firstName + ' ' + userInfo?.lastName || 'N/A'}\n`
         + `Email: ${userInfo?.email || 'N/A'}\n`
         + `Phone: ${userInfo?.phone || 'N/A'}\n`
-        + `Amount Requested: $${loanData.amount?.toLocaleString() || 'N/A'}\n`
+        + `Amount Requested: ZMW ${loanData.amount?.toLocaleString() || 'N/A'}\n`
         + `Loan Term: ${loanData.termWeeks} week(s)\n`
         + `Interest Rate: ${((loanData.interestRate || 0) * 100).toFixed(1)}%\n`
         + `Purpose: ${loanData.purpose || 'N/A'}\n`
@@ -395,7 +397,7 @@ export async function sendLoanApplicationEmail(
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
               <strong>Amount:</strong>
-              <span style="color: #28a745; font-weight: bold; font-size: 16px;">$${loanData.amount?.toLocaleString() || 'N/A'}</span>
+              <span style="color: #28a745; font-weight: bold; font-size: 16px;">ZMW ${loanData.amount?.toLocaleString() || 'N/A'}</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
               <strong>Term:</strong>
@@ -807,6 +809,90 @@ You have the right to receive a copy of your credit report used in this decision
   `;
 
       return sendEmail(borrowerEmail, subject, text, html);//{ subject, html, text };
+};
+
+interface LoanEmailData {
+    borrowerName: string;
+    borrowerEmail: string;
+    loanId: string;
+    amount: number;
+    reason?: string;
+    companyName?: string;
+    contactEmail?: string;
+    contactPhone?: string;
+}
+
+export const generateLoanReminderTemplate = (user: User, loan: Loan, daysUntilDue: number) => {
+    const formattedAmount = `ZMW ${loan.totalAmount?.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    const dueDate = new Date(loan.endDate!).toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+    });
+
+    return {
+        subject: `Reminder: Your QuickCash Loan Payment Due in ${daysUntilDue} Day${daysUntilDue !== 1 ? 's' : ''}`,
+        html: `
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { color: #2c3e50; border-bottom: 2px solid #f1c40f; padding-bottom: 10px; }
+        .content { margin: 20px 0; }
+        .footer { font-size: 12px; color: #7f8c8d; border-top: 1px solid #ecf0f1; padding-top: 10px; }
+        .button { background-color: #f1c40f; color: #2c3e50; padding: 10px 15px; text-decoration: none; border-radius: 4px; font-weight: bold; display: inline-block; }
+        .highlight { font-weight: bold; color: #e74c3c; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>QuickCash Loan Reminder</h2>
+    </div>
+    
+    <div class="content">
+        <p>Dear ${user.firstName} ${user.lastName},</p>
+        
+        <p>This is an automated reminder that your QuickCash loan of 
+        <span class="highlight">${formattedAmount}</span> 
+        is due in <span class="highlight">${daysUntilDue} day${daysUntilDue !== 1 ? 's' : ''}</span> 
+        (${dueDate}).</p>
+        
+        <p>To ensure uninterrupted service and avoid any late fees, please make your payment before the due date.</p>
+        
+       
+        
+        <p>If you've already made this payment, please disregard this reminder.</p>
+    </div>
+    
+    <div class="footer">
+        <p>© ${new Date().getFullYear()} QuickCash Loan Services. All rights reserved.</p>
+        <p>This is an automated message. Please do not reply directly to this email.</p>
+      
+    </div>
+</body>
+</html>
+        `,
+        text: `
+QuickCash Loan Reminder
+
+Dear ${user.firstName} ${user.lastName},
+
+This is a friendly reminder that your QuickCash loan of ${formattedAmount} 
+is due in ${daysUntilDue} day${daysUntilDue !== 1 ? 's' : ''} (${dueDate}).
+
+To ensure uninterrupted service and avoid any late fees, please make your payment before the due date.
+
+Make Payment Now: https://quickcash.example.com/repay
+
+If you've already made this payment, please disregard this reminder.
+
+© ${new Date().getFullYear()} QuickCash Loan Services. All rights reserved.
+This is an automated message. Please do not reply directly to this email.
+QuickCash LLC | 123 Financial Street | Suite 100 | Anytown, ST 12345
+        `
+    };
 };
 
 // Example usage in your approveLoan function:

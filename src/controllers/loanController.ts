@@ -924,6 +924,15 @@ const createLoanSchema = Joi.object({
       'any.required': 'Loan purpose is required'
     }),
 
+     collateral_details: Joi.string().min(10).max(500).required()
+    .messages({
+      'string.min': 'Collateral details must be at least 3 characters long',
+      'string.max': 'Collateral details cannot exceed 500 characters',
+      'any.required': 'Loan Collateral details are required'
+    }),
+
+
+
   collateralImages: Joi.array()
     .items(
       Joi.string()
@@ -1052,7 +1061,7 @@ export const createLoan = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const { amount, termWeeks, purpose, collateralImages } = value;
+    const { amount, termWeeks, purpose, collateralImages,collateral_details } = value;
 
     // Calculate interest rate based on term
     let interestRate: number;
@@ -1097,6 +1106,7 @@ export const createLoan = async (req: AuthRequest, res: Response) => {
       termWeeks,
       purpose,
       collateralImages: savedImageFilenames, // Store filenames, not paths
+      collateral_details,
       status: LoanStatus.PENDING
     } as unknown as LoanAttributes);
 
