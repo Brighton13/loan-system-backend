@@ -5,7 +5,7 @@ import { authenticate, authorize } from '../middleware/auth';
 import { UserRole } from '../models/User';
 import { uploadCollateral } from '../middleware/uploadMiddleware';
 import auth from './auth';
-import { make_payment } from '../controllers/payementController';
+import { get_all_payments, make_payment } from '../controllers/payementController';
 
 const router = Router();
 // router.get('/collateral/:filename', getCollateralImage);
