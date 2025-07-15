@@ -395,7 +395,7 @@ export async function sendLoanApplicationEmail(
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
               <strong>Amount:</strong>
-              <span style="color: #28a745; font-weight: bold; font-size: 16px;">$${loanData.amount?.toLocaleString() || 'N/A'}</span>
+              <span style="color: #28a745; font-weight: bold; font-size: 16px;">ZMW ${loanData.amount?.toLocaleString() || 'N/A'}</span>
             </div>
             <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee;">
               <strong>Term:</strong>

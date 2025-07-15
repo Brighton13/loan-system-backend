@@ -3,6 +3,7 @@ import User from '../models/User';
 import Loan, { LoanStatus } from '../models/Loan';
 import Payment, { PaymentStatus } from '../models/Payment';
 import sequelize from '../config/database';
+import { Op } from 'sequelize';
 
 
 
@@ -126,6 +127,96 @@ export const make_payment = async (req: AuthRequest, res: Response) => {
             status: 1,
             message: "An error occurred while processing the payment.",
 
+        });
+    }
+};
+
+export const get_all_payments = async (req: AuthRequest, res: Response) => {
+    try {
+        // Extract query parameters
+        const {
+            page = 1,
+            limit = 10,
+            loan_number,
+            method_of_payment,
+            transactionId,
+            start_date,
+            end_date
+        } = req.query;
+
+        // Calculate offset for pagination
+        const offset = (Number(page) - 1) * Number(limit);
+
+        // Build where conditions
+        const where: any = {};
+        const loanWhere: any = {};
+        const include = [
+            {
+                model: Loan,
+                attributes: ['loan_number', 'amount', 'status'],
+                where: loanWhere
+            },
+            {
+                model: User,
+                as: 'receiver',
+                attributes: ['firstName', 'lastName']
+            }
+        ];
+
+        // Add search filters
+        if (loan_number) {
+            loanWhere.loan_number = loan_number;
+        }
+
+        if (method_of_payment) {
+            where.method_of_payment = method_of_payment;
+        }
+
+        if (transactionId) {
+            where.transactionId = transactionId;
+        }
+
+        // Add date filter
+        if (start_date || end_date) {
+            where.createdAt = {};
+            if (start_date) {
+                where.createdAt[Op.gte] = new Date(start_date as string);
+            }
+            if (end_date) {
+                where.createdAt[Op.lte] = new Date(end_date as string);
+            }
+        }
+
+        // Get payments with pagination
+        const { count, rows: payments } = await Payment.findAndCountAll({
+            where,
+            include,
+            limit: Number(limit),
+            offset,
+            order: [['createdAt', 'DESC']] // Sort by newest first
+        });
+
+        // Calculate total pages
+        const totalPages = Math.ceil(count / Number(limit));
+
+        return res.status(200).json({
+            status: 0,
+            message: "Payments retrieved successfully",
+            data: {
+                payments,
+                pagination: {
+                    currentPage: Number(page),
+                    totalPages,
+                    totalItems: count,
+                    itemsPerPage: Number(limit)
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Error retrieving payments:', error);
+        return res.status(500).json({
+            status: 1,
+            message: "An error occurred while retrieving payments."
         });
     }
 };
