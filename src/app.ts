@@ -13,7 +13,7 @@ import './models/index';
 import { setupAssociations } from './models/index';
 import path from 'path';
 import { startLoanReminderJob } from './services/triggers';
-import { sendDueDateReminders } from './services/automated_job/due_loan_reminders';
+import { handleOverdueLoans, sendDueDateReminders } from './services/automated_job/due_loan_reminders';
 
 dotenv.config();
 
@@ -62,8 +62,10 @@ app.use('/api/users', userRoutes);
 app.get('/health', (req, res) => {
   res.json({ status: 'OK', timestamp: new Date().toISOString() });
 });
+
 app.get('/test-reminders', async (req, res) => {
   await sendDueDateReminders();
+  await handleOverdueLoans();
   res.send('Reminder test completed');
 });
 

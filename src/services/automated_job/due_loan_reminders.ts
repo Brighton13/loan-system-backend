@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Op } from "sequelize";
 import { AuthRequest } from "../../controllers/loanController";
-import Loan from "../../models/Loan";
+import Loan, { LoanStatus } from "../../models/Loan";
 import User from "../../models/User";
 import { generateLoanReminderTemplate, sendEmail } from '../email';
 
@@ -163,3 +163,83 @@ export async function sendDueDateReminders() {
         console.error('Error sending loan reminders:', error);
     }
 }
+
+
+export async function handleOverdueLoans() {
+    try {
+        // Calculate date 3 days ago
+        const threeDaysAgo = new Date();
+        threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+        
+        // Set time to beginning of the day (00:00:00)
+        const startOfOverdueDate = new Date(threeDaysAgo);
+        startOfOverdueDate.setHours(0, 0, 0, 0);
+
+        // Set time to end of the day (23:59:59)
+        const endOfOverdueDate = new Date(threeDaysAgo);
+        endOfOverdueDate.setHours(23, 59, 59, 999);
+
+        // Find all active loans that ended 3 days ago
+        const overdueLoans = await Loan.findAll({
+            where: {
+                endDate: {
+                    [Op.between]: [startOfOverdueDate, endOfOverdueDate]
+                },
+                status: 'active' // Only loans that are still active
+            },
+            include: [{
+                model: User,
+                as: 'user',
+                attributes: ['id', 'email', 'phone', 'firstName', 'lastName']
+            }]
+        });
+
+        // Update status to overdue and send notifications
+        const updatePromises = overdueLoans.map(async (loan) => {
+            try {
+                // Update loan status to overdue
+                await loan.update({ 
+                    status: LoanStatus.OVERDUE,
+
+                });
+
+                // Send notification to user (email/SMS)
+                // await sendOverdueNotification(loan.user, loan);
+                
+                return loan;
+            } catch (error) {
+                console.error(`Error processing loan ${loan.id}:`, error);
+                return null;
+            }
+        });
+
+        const updatedLoans = await Promise.all(updatePromises);
+        // const successfulUpdates = updatedLoans.filter(loan => loan !== null);
+      console.log(`Marked ${updatedLoans.length} as of overdue`);
+      
+    } catch (error) {
+        console.error('Error handling overdue loans:', error);
+    }   
+}
+
+// Helper function to send notifications
+// async function sendOverdueNotification(user: User, loan: Loan) {
+//     try {
+//         // Send email
+//         await sendEmail({
+//             to: user.email,
+//             subject: 'Loan Overdue Notification',
+//             text: `Dear ${user.firstName}, your loan #${loan.loan_number} is now overdue. Please make a payment as soon as possible.`
+//         });
+
+//         // Send SMS if phone number exists
+//         if (user.phone) {
+//             await sendSms({
+//                 to: user.phone,
+//                 body: `Dear ${user.firstName}, your loan #${loan.loan_number} is overdue. Please make payment.`
+//             });
+//         }
+//     } catch (error) {
+//         console.error(`Error sending notification for loan ${loan.id}:`, error);
+//     }
+// }

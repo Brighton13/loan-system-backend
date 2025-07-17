@@ -9,7 +9,8 @@ export enum LoanStatus {
     REJECTED = 'rejected',
     ACTIVE = 'active',
     COMPLETED = 'completed',
-    DEFAULTED = 'defaulted'
+    DEFAULTED = 'defaulted',
+    OVERDUE = 'overdue'
 }
 
 export interface LoanAttributes {
