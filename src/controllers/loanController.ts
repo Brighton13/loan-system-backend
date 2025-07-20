@@ -924,7 +924,7 @@ const createLoanSchema = Joi.object({
       'any.required': 'Loan purpose is required'
     }),
 
-     collateral_details: Joi.string().min(10).max(500).required()
+     collateral_details: Joi.string().min(3).max(500).required()
     .messages({
       'string.min': 'Collateral details must be at least 3 characters long',
       'string.max': 'Collateral details cannot exceed 500 characters',
