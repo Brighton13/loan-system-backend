@@ -1053,13 +1053,13 @@ export const createLoan = async (req: AuthRequest, res: Response) => {
       }
     });
 
-    if (activeLoan) {
-      return res.status(200).json({
-        status: 1,
-        message: "You cannot have multiple unsettled loans",
-        data: null
-      });
-    }
+    // if (activeLoan) {
+    //   return res.status(200).json({
+    //     status: 1,
+    //     message: "You cannot have multiple unsettled loans",
+    //     data: null
+    //   });
+    // }
 
     const { amount, termWeeks, purpose, collateralImages,collateral_details } = value;
 
