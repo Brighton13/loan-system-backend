@@ -6,5 +6,5 @@ export default (req: VercelRequest, res: VercelResponse) => {
 };
 
 export const config = {
-  runtime: "nodejs18.x"
+  runtime: "nodejs"
 };
