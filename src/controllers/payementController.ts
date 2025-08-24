@@ -2,10 +2,10 @@ import { Request, Response } from 'express';
 import User from '../models/User';
 import Loan, { LoanStatus } from '../models/Loan';
 import Payment, { PaymentStatus } from '../models/Payment';
-import sequelize from '../config/database';
+import { getSequelize } from '../config/database';
 import { Op } from 'sequelize';
 
-
+const sequelize = getSequelize();
 
 interface AuthRequest extends Request {
     user?: User;

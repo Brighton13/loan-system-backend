@@ -1,8 +1,8 @@
 // src/models/Loan.ts
 import { DataTypes, Model, Optional } from 'sequelize';
-import sequelize from '../config/database';
+import { getSequelize } from '../config/database';
 import User from './User';
-
+const sequelize = getSequelize();
 export enum LoanStatus {
     PENDING = 'pending',
     APPROVED = 'approved',

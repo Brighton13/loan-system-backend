@@ -1,8 +1,10 @@
 // src/models/Payment.ts
 import { DataTypes, Model, Optional } from 'sequelize';
-import sequelize from '../config/database';
+import {getSequelize} from '../config/database';
 import Loan from './Loan';
 import User from './User';
+
+const sequelize = getSequelize();
 
 export enum PaymentStatus {
   PENDING = 'pending',

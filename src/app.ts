@@ -4,7 +4,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import dotenv from 'dotenv';
-import sequelize from './config/database';
+// import sequelize from './config/database';
 import authRoutes from './routes/auth';
 import loanRoutes from './routes/loans';
 import AdminDashBoard from './routes/admin';
@@ -14,9 +14,10 @@ import { setupAssociations } from './models/index';
 import path from 'path';
 import { startLoanReminderJob } from './services/triggers';
 import { handleOverdueLoans, sendDueDateReminders } from './services/automated_job/due_loan_reminders';
+import { getSequelize } from './config/database';
 
 dotenv.config();
-
+const sequelize = getSequelize();
 const app = express();
 const PORT = process.env.PORT || 3000;
 

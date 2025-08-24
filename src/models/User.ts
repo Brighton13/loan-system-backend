@@ -1,7 +1,7 @@
 import { DataTypes, Model, Optional } from 'sequelize';
-import sequelize from '../config/database';
+import  { getSequelize } from '../config/database';
 import bcrypt from 'bcryptjs';
-
+const sequelize = getSequelize();
 export enum UserRole {
   ADMIN = 'admin',
   USER = 'user'
